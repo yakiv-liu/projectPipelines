@@ -1,8 +1,8 @@
-@Library('jenkins-pipeline-library@v1.0.0')_
+@Library('jenkins-pipeline-library@master')_
 
 pipeline {
     agent {
-        label 'centos-slave'  // 这个项目指定在centos-slave上运行
+        label 'docker-jnlp-slave'  // 这个项目指定在centos-slave上运行
     }
     
     parameters {
@@ -47,7 +47,7 @@ pipeline {
                         projectName: params.PROJECT_NAME,
                         org: 'yakiv-liu',
                         repo: 'demo-helloworld',
-                        agentLabel: 'centos-slave',
+                        agentLabel: 'docker-jnlp-slave',
                         defaultEmail: params.EMAIL_RECIPIENTS,
                         environments: ['staging', 'pre-prod', 'prod'],
                         // 传递用户选择的参数给共享库
