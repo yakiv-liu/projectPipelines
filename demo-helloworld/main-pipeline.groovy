@@ -11,14 +11,20 @@ properties([
         ])
 ])
 
-// 直接调用共享库，不包装在 pipeline 块中
+// 调用共享库，传递所有必要配置
 mainPipeline([
+        // 基础配置
         projectName: params.PROJECT_NAME,
+        org: 'yakiv-liu',
+        repo: 'demo-helloworld',
+        agentLabel: 'docker-jnlp-slave',  // 指定 Jenkins 节点
+        defaultEmail: params.EMAIL_RECIPIENTS,
+
+        // 用户选择参数
         deployEnv: params.DEPLOY_ENV,
         rollback: params.ROLLBACK.toBoolean(),
         rollbackVersion: params.ROLLBACK_VERSION,
         isRelease: params.IS_RELEASE.toBoolean(),
-        defaultEmail: params.EMAIL_RECIPIENTS,
 
         // 项目特定配置
         appPort: 8080,
