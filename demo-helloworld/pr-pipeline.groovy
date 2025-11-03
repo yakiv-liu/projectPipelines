@@ -1,8 +1,8 @@
-@Library('jenkins-pipeline-library@v1.0.0')_
+@Library('jenkins-pipeline-library@master')_
 
 pipeline {
     agent {
-        label 'centos-slave'
+        label 'docker-jnlp-slave'
     }
     
     parameters {
@@ -27,8 +27,8 @@ pipeline {
                         projectName: params.PROJECT_NAME,
                         org: 'yakiv-liu',
                         repo: 'demo-helloworld',
-                        agentLabel: 'centos-slave',
-                        defaultBranch: 'main',
+                        agentLabel: 'docker-jnlp-slave',
+                        defaultBranch: 'master',
                         defaultEmail: params.EMAIL_RECIPIENTS
                     ])
                 }
