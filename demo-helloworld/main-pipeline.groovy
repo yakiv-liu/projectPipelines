@@ -3,6 +3,7 @@
 properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
+                string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
                 string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
@@ -15,6 +16,7 @@ properties([
 mainPipeline([
         // 基础配置
         projectName: params.PROJECT_NAME,
+        projectRepoUrl: params.PROJECT_REPO_URL,  // 新增：项目仓库 URL
         org: 'yakiv-liu',
         repo: 'demo-helloworld',
         agentLabel: 'docker-jnlp-slave',  // 指定 Jenkins 节点
