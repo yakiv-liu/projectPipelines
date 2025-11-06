@@ -4,7 +4,8 @@ properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
                 string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
-                string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),  // 新增分支参数，默认值为 master
+                // string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),  // 新增分支参数，默认值为 master
+                string(name: 'PROJECT_BRANCH', defaultValue: 'main', description: '项目代码分支（默认：main）'),  // 新增分支参数，默认值为 main
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
                 string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
