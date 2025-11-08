@@ -34,8 +34,8 @@ mainPipeline([
         // 项目特定配置
         appPort: 8080,
         environmentHosts: [
-                staging: [host: '192.168.233.10'],
-                'pre-prod': [host: '192.168.233.11'],
-                prod: [host: '192.168.233.12']
+                staging: [host: '192.168.233.8'],
+                'pre-prod': [host: '192.168.233.9'],
+                prod: [host: '192.168.233.10']
         ]
 ])
