@@ -13,6 +13,18 @@ properties([
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
                 // === 新增参数：控制是否跳过依赖检查 ===
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
+        ]),
+        pipelineTriggers([
+                [
+                        $class: 'GitHubPushTrigger',
+                        adminlist: '',
+                        allowWhiteList: false,
+                        branchRestriction: 'main',  // 只监听main分支
+                        cron: '',
+                        triggerForBranch: true,
+                        triggerForPr: false,
+                        whiteList: ''
+                ]
         ])
 ])
 
