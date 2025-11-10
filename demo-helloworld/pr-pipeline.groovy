@@ -28,7 +28,7 @@ pipeline {
                         org: 'yakiv-liu',
                         repo: 'demo-helloworld',
                         agentLabel: 'docker-jnlp-slave',
-                        defaultBranch: 'master',
+                        defaultBranch: 'main',
                         defaultEmail: params.EMAIL_RECIPIENTS
                     ])
                 }
