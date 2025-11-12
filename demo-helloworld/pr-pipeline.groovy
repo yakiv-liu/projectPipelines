@@ -19,7 +19,13 @@ properties([
                         triggerForPr: true,     // 启用 PR 触发
                         whiteList: ''
                 ]
-        ])
+        ]),
+        // 添加 GitHub 项目配置
+        [
+                $class: 'GitHubProjectProperty',
+                projectUrlStr: 'https://github.com/yakiv-liu/demo-helloworld/',
+                displayName: ''
+        ]
 ])
 
 pipeline {

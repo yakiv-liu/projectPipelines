@@ -25,7 +25,13 @@ properties([
                         triggerForPr: false,
                         whiteList: ''
                 ]
-        ])
+        ]),
+        // 添加 GitHub 项目配置
+        [
+                $class: 'GitHubProjectProperty',
+                projectUrlStr: 'https://github.com/yakiv-liu/demo-helloworld/',
+                displayName: ''
+        ]
 ])
 
 // 调用共享库，传递所有必要配置
