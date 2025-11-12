@@ -1,5 +1,34 @@
 @Library('jenkins-pipeline-library@master')_
 
+// ========== 修改点1：添加详细的事件检测 ==========
+echo "=== PR Pipeline 事件检测 ==="
+echo "CHANGE_ID: ${env.CHANGE_ID}"
+echo "BRANCH_NAME: ${env.BRANCH_NAME}"
+echo "GIT_BRANCH: ${env.GIT_BRANCH}"
+
+// 获取构建原因
+def causes = currentBuild.getBuildCauses()
+echo "构建原因:"
+causes.each { cause ->
+    echo " - ${cause}"
+}
+
+// 检查是否是 PR 事件
+def isPR = env.CHANGE_ID != null
+def hasPRCause = causes.any { cause ->
+    cause?._class?.contains('GitHubPR') || cause?._class?.contains('PullRequest')
+}
+
+echo "isPR (CHANGE_ID != null): ${isPR}"
+echo "hasPRCause: ${hasPRCause}"
+
+// 如果不是 PR 事件，友好地跳过
+if (!isPR && !hasPRCause) {
+    echo "⚠️ 这不是 PR 事件，跳过 PR pipeline 执行"
+    currentBuild.result = 'NOT_BUILT'
+    return
+}
+
 properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
@@ -8,26 +37,19 @@ properties([
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
                 choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
         ]),
-        pipelineTriggers([
-                [
-                        $class: 'GitHubPRTrigger',
-                        spec: '* * * * *',  // 轮询间隔
-                        triggerPhrase: '.*', // 触发短语
-                        onlyTriggerPhrase: false,
-                        githubHubConfig: [id: 'github'], // 配置的 GitHub server ID
-                        permitAll: false,
-                        autoCloseFailed: true,
-                        allowMembersOfWhitelistedOrgsAsAdmin: true,
-                        orgsList: [],
-                        whiteListTargetBranches: [],
-                        blackListTargetBranches: [],
-                        blackListLabels: [],
-                        whiteListLabels: [],
-                        adminList: '',
-                        cron: '* * * * *',
-                        useGitHubHooks: true  // 使用 webhook 而不是轮询
-                ]
-        ])
+        // ========== 修改点2：移除有问题的 GitHubPRTrigger，使用标准触发器 ==========
+//        pipelineTriggers([
+//                [
+//                        $class: 'GitHubPushTrigger',
+//                        adminlist: '',
+//                        allowWhiteList: false,
+//                        branchRestriction: '',      // 空字符串，不限制分支
+//                        cron: '',
+//                        triggerForBranch: false,    // 禁用分支触发
+//                        triggerForPr: true,         // 启用 PR 触发
+//                        whiteList: ''
+//                ]
+//        ])
 ])
 
 pipeline {
