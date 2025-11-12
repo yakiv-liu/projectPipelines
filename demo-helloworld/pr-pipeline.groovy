@@ -10,22 +10,24 @@ properties([
         ]),
         pipelineTriggers([
                 [
-                        $class: 'GitHubPushTrigger',
-                        adminlist: '',
-                        allowWhiteList: false,
-                        branchRestriction: '',  // PR 不限制分支
-                        cron: '',
-                        triggerForBranch: false,
-                        triggerForPr: true,     // 启用 PR 触发
-                        whiteList: ''
+                        $class: 'GitHubPRTrigger',
+                        spec: '* * * * *',  // 轮询间隔
+                        triggerPhrase: '.*', // 触发短语
+                        onlyTriggerPhrase: false,
+                        githubHubConfig: [id: 'github'], // 配置的 GitHub server ID
+                        permitAll: false,
+                        autoCloseFailed: true,
+                        allowMembersOfWhitelistedOrgsAsAdmin: true,
+                        orgsList: [],
+                        whiteListTargetBranches: [],
+                        blackListTargetBranches: [],
+                        blackListLabels: [],
+                        whiteListLabels: [],
+                        adminList: '',
+                        cron: '* * * * *',
+                        useGitHubHooks: true  // 使用 webhook 而不是轮询
                 ]
-        ]),
-        // 添加 GitHub 项目配置
-        [
-                $class: 'GitHubProjectProperty',
-                projectUrlStr: 'https://github.com/yakiv-liu/demo-helloworld/',
-                displayName: ''
-        ]
+        ])
 ])
 
 pipeline {
