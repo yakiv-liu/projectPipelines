@@ -1,6 +1,9 @@
 @Library('jenkins-pipeline-library@master')_
 
 def isPR = env.CHANGE_ID != null
+print "change_id的值是：${env.CHANGE_ID}"
+print "ispr的值: ${isPR}"
+print "branch name is: ${env.BRANCH_NAME}"
 def isMainBranchPush = env.BRANCH_NAME == 'main' && !isPR
 
 // 如果是 PR 事件，立即拒绝并给出明确提示
