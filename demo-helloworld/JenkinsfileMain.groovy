@@ -1,3 +1,10 @@
+@Library('jenkins-pipeline-library@master')_
+
+def isPR = env.CHANGE_ID != null
+print "change_id的值是：${env.CHANGE_ID}"
+print "ispr的值: ${isPR}"
+print "branch name is: ${env.BRANCH_NAME}"
+
 properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
@@ -76,8 +83,9 @@ properties([
 def extractVersionFromChoice(choiceValue) {
     if (!choiceValue) return ""
 
+    // ========== 修正正则表达式语法错误 ==========
     // 处理格式："20241120143025 (11-20 14:30)"
-    def matcher = choiceValue =~ /^(\\d+)\\s*\\(/
+    def matcher = choiceValue =~ /^(\d+)\s*\(/
     if (matcher.find()) {
         return matcher[0][1]
     }
