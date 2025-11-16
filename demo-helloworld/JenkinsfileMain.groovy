@@ -1,7 +1,3 @@
-@Library('jenkins-pipeline-library@master')_
-
-def isPR = env.CHANGE_ID != null
-
 properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
@@ -14,7 +10,7 @@ properties([
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
 
-                // ========== 核心修改：使用 Active Choices Reactive Parameter ==========
+                // ========== 修改：直接在脚本中实现数据库连接 ==========
                 [
                         $class: 'CascadeChoiceParameter',
                         choiceType: 'PT_SINGLE_SELECT',
@@ -24,26 +20,43 @@ properties([
                                 $class: 'GroovyScript',
                                 script: [
                                         script: '''
+                                import groovy.sql.Sql
+                                
                                 // 只有当选择deploy-only模式时才显示版本列表
                                 if (BUILD_MODE != "deploy-only") {
                                     return ["请选择deploy-only模式以显示版本列表"]
                                 }
                                 
                                 try {
-                                    // 使用共享库中的数据库工具类
-                                    def configLoader = new org.yakiv.Config(steps)
-                                    def dbTools = new org.yakiv.DatabaseTools(steps, env, configLoader)
+                                    // 数据库连接配置 - 使用您的实际配置
+                                    def dbUrl = "jdbc:postgresql://192.168.233.8:5432/jenkins_deployments"
+                                    def dbUser = "sonar"
+                                    def dbPassword = "sonar123"
+                                    def driver = "org.postgresql.Driver"
                                     
-                                    def recentVersions = dbTools.getRecentBuildVersions(PROJECT_NAME, 10)
+                                    // 加载驱动
+                                    Class.forName(driver)
+                                    def sql = Sql.newInstance(dbUrl, dbUser, dbPassword, driver)
                                     
-                                    if (recentVersions.empty) {
+                                    // 查询最近10个成功构建的版本
+                                    def query = """
+                                        SELECT version, build_timestamp 
+                                        FROM build_records 
+                                        WHERE project_name = ? AND build_status = 'SUCCESS'
+                                        ORDER BY build_timestamp DESC 
+                                        LIMIT 10
+                                    """
+                                    def versions = sql.rows(query, [PROJECT_NAME])
+                                    sql.close()
+                                    
+                                    if (versions.empty) {
                                         return ["暂无可用版本，请先执行构建"]
                                     }
                                     
                                     // 返回版本列表，格式：版本号 (构建时间)
-                                    return recentVersions.collect { version -> 
-                                        def time = new Date(version.build_timestamp.time).format("MM-dd HH:mm")
-                                        "${version.version} (${time})"
+                                    return versions.collect { row -> 
+                                        def time = new Date(row.build_timestamp.time).format("MM-dd HH:mm")
+                                        "${row.version} (${time})"
                                     }
                                     
                                 } catch (Exception e) {
@@ -59,6 +72,18 @@ properties([
         ])
 ])
 
+// 辅助方法：从选择项中提取纯版本号
+def extractVersionFromChoice(choiceValue) {
+    if (!choiceValue) return ""
+
+    // 处理格式："20241120143025 (11-20 14:30)"
+    def matcher = choiceValue =~ /^(\\d+)\\s*\\(/
+    if (matcher.find()) {
+        return matcher[0][1]
+    }
+    return choiceValue
+}
+
 // 调用共享库，传递所有必要配置
 mainPipeline([
         projectName: params.PROJECT_NAME,
@@ -70,7 +95,7 @@ mainPipeline([
         defaultEmail: params.EMAIL_RECIPIENTS,
         deployEnv: params.DEPLOY_ENV,
         buildMode: params.BUILD_MODE,
-        deployVersion: extractVersionFromChoice(params.DEPLOY_VERSION), // 提取纯版本号
+        deployVersion: extractVersionFromChoice(params.DEPLOY_VERSION),
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
         appPort: 8085,
         environmentHosts: [
@@ -79,15 +104,3 @@ mainPipeline([
                 prod: [host: '192.168.233.10']
         ]
 ])
-
-// ========== 辅助方法：从选择项中提取纯版本号 ==========
-def extractVersionFromChoice(choiceValue) {
-    if (!choiceValue) return ""
-
-    // 处理格式："20241120143025 (11-20 14:30)"
-    def matcher = choiceValue =~ /^(\d+)\s*\(/
-    if (matcher.find()) {
-        return matcher[0][1]
-    }
-    return choiceValue
-}
