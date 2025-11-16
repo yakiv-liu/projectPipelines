@@ -37,19 +37,6 @@ properties([
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
                 choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
         ]),
-        // ========== 修改点2：移除有问题的 GitHubPRTrigger，使用标准触发器 ==========
-//        pipelineTriggers([
-//                [
-//                        $class: 'GitHubPushTrigger',
-//                        adminlist: '',
-//                        allowWhiteList: false,
-//                        branchRestriction: '',      // 空字符串，不限制分支
-//                        cron: '',
-//                        triggerForBranch: false,    // 禁用分支触发
-//                        triggerForPr: true,         // 启用 PR 触发
-//                        whiteList: ''
-//                ]
-//        ])
 ])
 
 pipeline {
