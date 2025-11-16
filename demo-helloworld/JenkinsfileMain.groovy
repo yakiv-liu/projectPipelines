@@ -27,49 +27,107 @@ properties([
                                 $class: 'GroovyScript',
                                 script: [
                                         script: '''
-                                import groovy.sql.Sql
-                                
-                                // 只有当选择deploy-only模式时才显示版本列表
-                                if (BUILD_MODE != "deploy-only") {
-                                    return ["请选择deploy-only模式以显示版本列表"]
-                                }
-                                
-                                try {
-                                    // 数据库连接配置 - 使用您的实际配置
-                                    def dbUrl = "jdbc:postgresql://192.168.233.8:5432/jenkins_deployments"
-                                    def dbUser = "sonar"
-                                    def dbPassword = "sonar123"
-                                    def driver = "org.postgresql.Driver"
-                                    
-                                    // 加载驱动
-                                    Class.forName(driver)
-                                    def sql = Sql.newInstance(dbUrl, dbUser, dbPassword, driver)
-                                    
-                                    // 查询最近10个成功构建的版本
-                                    def query = """
-                                        SELECT version, build_timestamp 
-                                        FROM build_records 
-                                        WHERE project_name = ? AND build_status = 'SUCCESS'
-                                        ORDER BY build_timestamp DESC 
-                                        LIMIT 10
-                                    """
-                                    def versions = sql.rows(query, [PROJECT_NAME])
-                                    sql.close()
-                                    
-                                    if (versions.empty) {
-                                        return ["暂无可用版本，请先执行构建"]
-                                    }
-                                    
-                                    // 返回版本列表，格式：版本号 (构建时间)
-                                    return versions.collect { row -> 
-                                        def time = new Date(row.build_timestamp.time).format("MM-dd HH:mm")
-                                        "${row.version} (${time})"
-                                    }
-                                    
-                                } catch (Exception e) {
-                                    return ["加载版本失败: " + e.message]
-                                }
-                            ''',
+                                            import groovy.sql.Sql
+                                            import java.sql.DriverManager
+                                            import java.net.URLClassLoader
+                                            import java.io.File
+                                            
+                                            // 只有当选择deploy-only模式时才显示版本列表
+                                            if (BUILD_MODE != "deploy-only") {
+                                                return ["请选择deploy-only模式以显示版本列表"]
+                                            }
+                                            
+                                            try {
+                                                // 数据库连接配置 - 使用您的实际配置
+                                                def dbUrl = "jdbc:postgresql://192.168.233.8:5432/jenkins_deployments"
+                                                def dbUser = "sonar"
+                                                def dbPassword = "sonar123"
+                                                def driverClassName = "org.postgresql.Driver"
+                                                
+                                                // ========== 参照 DatabaseTools.groovy 的驱动加载方式 ==========
+                                                def driverInstance = null
+                                                
+                                                try {
+                                                    // 首先尝试直接加载（如果已经加载过）
+                                                    driverInstance = Class.forName(driverClassName).newInstance()
+                                                } catch (ClassNotFoundException e) {
+                                                    // 驱动类未找到，从已知路径加载
+                                                    def driverPath = "/tmp/jenkins-libs/postgresql.jar"
+                                                    
+                                                    // 检查文件是否存在
+                                                    def driverFile = new File(driverPath)
+                                                    if (!driverFile.exists()) {
+                                                        return ["驱动文件不存在: ${driverPath}"]
+                                                    }
+                                                    
+                                                    try {
+                                                        // 使用URLClassLoader动态加载
+                                                        def urlClassLoader = new URLClassLoader(
+                                                            [driverFile.toURI().toURL()] as URL[],
+                                                            this.class.classLoader
+                                                        )
+                                                        
+                                                        driverInstance = urlClassLoader.loadClass(driverClassName).newInstance()
+                                                        
+                                                    } catch (Exception ex) {
+                                                        return ["从已知路径加载驱动失败: " + ex.message]
+                                                    }
+                                                }
+                                                
+                                                if (!driverInstance) {
+                                                    return ["无法加载数据库驱动"]
+                                                }
+                                                
+                                                // 建立连接
+                                                def connection = null
+                                                try {
+                                                    // 尝试通过驱动实例建立连接
+                                                    def props = new Properties()
+                                                    props.setProperty("user", dbUser)
+                                                    props.setProperty("password", dbPassword)
+                                                    
+                                                    connection = driverInstance.connect(dbUrl, props)
+                                                    if (connection == null) {
+                                                        // 备选方案：尝试注册到DriverManager
+                                                        DriverManager.registerDriver(driverInstance)
+                                                        connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword)
+                                                    }
+                                                } catch (Exception e) {
+                                                    return ["数据库连接失败: " + e.message]
+                                                }
+                                                
+                                                if (!connection) {
+                                                    return ["无法建立数据库连接"]
+                                                }
+                                                
+                                                def sql = new Sql(connection)
+                                                
+                                                // 查询最近10个成功构建的版本
+                                                def query = """
+                                                    SELECT version, build_timestamp 
+                                                    FROM build_records 
+                                                    WHERE project_name = ? AND build_status = 'SUCCESS'
+                                                    ORDER BY build_timestamp DESC 
+                                                    LIMIT 10
+                                                """
+                                                def versions = sql.rows(query, [PROJECT_NAME])
+                                                sql.close()
+                                                connection.close()
+                                                
+                                                if (versions.empty) {
+                                                    return ["暂无可用版本，请先执行构建"]
+                                                }
+                                                
+                                                // 返回版本列表，格式：版本号 (构建时间)
+                                                return versions.collect { row -> 
+                                                    def time = new Date(row.build_timestamp.time).format("MM-dd HH:mm")
+                                                    "${row.version} (${time})"
+                                                }
+                                                
+                                            } catch (Exception e) {
+                                                return ["加载版本失败: " + e.message]
+                                            }
+                                        ''',
                                         fallbackScript: 'return ["加载版本列表失败，请检查数据库连接"]'
                                 ]
                         ]
