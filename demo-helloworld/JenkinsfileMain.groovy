@@ -10,13 +10,20 @@ properties([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
                 string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
                 string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),
-                choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only'], description: '构建模式：build-only(仅构建) 或 full-pipeline(完整流水线)'),
+                // ========== 修改点1：增加 deploy-only 模式，更新描述 ==========
+                choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only', 'deploy-only'],
+                        description: '''构建模式选择：
+                        • full-pipeline: 完整流水线（构建+部署）
+                        • build-only: 仅构建（不需要填写部署相关参数）
+                        • deploy-only: 仅部署（需要填写部署版本）'''),
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
-                booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
-                string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
+                // ========== 修改点2：移除回滚相关参数 ==========
+                // booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
+                // string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
+                string(name: 'DEPLOY_VERSION', defaultValue: '', description: '部署版本号（仅在deploy-only模式下需要填写，格式如：20241120123045）'),
+                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
                 // === 控制是否跳过依赖检查 ===
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
-                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
         ])
 ])
 
@@ -31,9 +38,12 @@ mainPipeline([
         agentLabel: 'docker-jnlp-slave',
         defaultEmail: params.EMAIL_RECIPIENTS,
         deployEnv: params.DEPLOY_ENV,
-        rollback: params.ROLLBACK.toBoolean(),
-        rollbackVersion: params.ROLLBACK_VERSION,
+        // ========== 修改点4：移除回滚相关配置 ==========
+        // rollback: params.ROLLBACK.toBoolean(),
+        // rollbackVersion: params.ROLLBACK_VERSION,
         buildMode: params.BUILD_MODE,
+        // ========== 修改点5：传递部署版本参数 ==========
+        deployVersion: params.DEPLOY_VERSION,
         // === 传递跳过依赖检查参数 ===
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
         // 项目特定配置
