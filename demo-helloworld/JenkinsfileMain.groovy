@@ -17,7 +17,7 @@ properties([
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
 
-                // ========== 修改：直接在脚本中实现数据库连接 ==========
+                // ========== 修复：确保返回字符串数组，避免[object Object]问题 ==========
                 [
                         $class: 'CascadeChoiceParameter',
                         choiceType: 'PT_SINGLE_SELECT',
@@ -38,23 +38,22 @@ properties([
                                             }
                                             
                                             try {
-                                                // 数据库连接配置 - 使用您的实际配置
+                                                // 数据库连接配置
                                                 def dbUrl = "jdbc:postgresql://192.168.233.8:5432/jenkins_deployments"
                                                 def dbUser = "sonar"
                                                 def dbPassword = "sonar123"
                                                 def driverClassName = "org.postgresql.Driver"
                                                 
-                                                // ========== 参照 DatabaseTools.groovy 的驱动加载方式 ==========
+                                                // 驱动加载
                                                 def driverInstance = null
                                                 
                                                 try {
-                                                    // 首先尝试直接加载（如果已经加载过）
+                                                    // 首先尝试直接加载
                                                     driverInstance = Class.forName(driverClassName).newInstance()
                                                 } catch (ClassNotFoundException e) {
                                                     // 驱动类未找到，从已知路径加载
                                                     def driverPath = "/tmp/jenkins-libs/postgresql.jar"
                                                     
-                                                    // 检查文件是否存在
                                                     def driverFile = new File(driverPath)
                                                     if (!driverFile.exists()) {
                                                         return ["驱动文件不存在: ${driverPath}"]
@@ -118,14 +117,20 @@ properties([
                                                     return ["暂无可用版本，请先执行构建"]
                                                 }
                                                 
-                                                // 返回版本列表，格式：版本号 (构建时间)
-                                                return versions.collect { row -> 
+                                                // ========== 修复关键：确保返回字符串数组 ==========
+                                                // 明确转换为字符串列表，避免任何对象引用问题
+                                                def versionList = []
+                                                versions.each { row -> 
                                                     def time = new Date(row.build_timestamp.time).format("MM-dd HH:mm")
-                                                    "${row.version} (${time})"
+                                                    // 明确创建字符串，不使用隐式转换
+                                                    def versionString = row.version.toString() + " (" + time.toString() + ")"
+                                                    versionList.add(versionString)
                                                 }
                                                 
+                                                return versionList
+                                                
                                             } catch (Exception e) {
-                                                return ["加载版本失败: " + e.message]
+                                                return ["加载版本失败: " + e.message.toString()]
                                             }
                                         ''',
                                         fallbackScript: 'return ["加载版本列表失败，请检查数据库连接"]'
@@ -141,7 +146,6 @@ properties([
 def extractVersionFromChoice(choiceValue) {
     if (!choiceValue) return ""
 
-    // ========== 修正正则表达式语法错误 ==========
     // 处理格式："20241120143025 (11-20 14:30)"
     def matcher = choiceValue =~ /^(\d+)\s*\(/
     if (matcher.find()) {
