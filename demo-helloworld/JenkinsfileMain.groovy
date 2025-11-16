@@ -1,9 +1,9 @@
 @Library('jenkins-pipeline-library@master')_
 
 def isPR = env.CHANGE_ID != null
-//print "change_id的值是：${env.CHANGE_ID}"
-//print "ispr的值: ${isPR}"
-//print "branch name is: ${env.BRANCH_NAME}"
+print "change_id的值是：${env.CHANGE_ID}"
+print "ispr的值: ${isPR}"
+print "branch name is: ${env.BRANCH_NAME}"
 
 properties([
         parameters([
@@ -16,7 +16,8 @@ properties([
 • build-only: 仅构建（会推送Docker镜像到仓库）- 自动生成版本号  
 • deploy-only: 仅部署（需要从下方选择部署版本）'''),
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
-                // ========== 修改点2：使用 Active Choices 参数 ==========
+                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
+                // ========== 修改点2：使用正确的 Active Choices 参数语法 ==========
                 [
                         $class: 'CascadeChoiceParameter',
                         choiceType: 'PT_SINGLE_SELECT',
@@ -24,51 +25,49 @@ properties([
                         referencedParameters: 'BUILD_MODE',
                         script: [
                                 $class: 'GroovyScript',
-                                script: '''
-                            import groovy.sql.Sql
-                            
-                            // 如果是deploy-only模式，从数据库加载版本
-                            if (BUILD_MODE == "deploy-only") {
-                                try {
-                                    // 数据库连接配置 - 需要根据您的环境调整
-                                    def dbUrl = "jdbc:postgresql://192.168.233.8:5432/jenkins_deployments"
-                                    def dbUser = "sonar"
-                                    def dbPassword = "sonar123"
-                                    def driver = "org.postgresql.Driver"
-                                    
-                                    // 加载驱动
-                                    Class.forName(driver)
-                                    def sql = Sql.newInstance(dbUrl, dbUser, dbPassword, driver)
-                                    
-                                    // 查询最近10个成功构建的版本
-                                    def versions = sql.rows("""
-                                        SELECT version 
-                                        FROM build_records 
-                                        WHERE project_name = ? AND build_status = 'SUCCESS'
-                                        ORDER BY build_timestamp DESC 
-                                        LIMIT 10
-                                    """, ['demo-helloworld'])
-                                    
-                                    sql.close()
-                                    
-                                    // 返回版本列表
-                                    def versionList = versions.collect { it.version }
-                                    return versionList ?: ["暂无可用版本"]
-                                    
-                                } catch (Exception e) {
-                                    return ["数据库连接失败: " + e.message]
+                                script: [
+                                        script: '''
+                                import groovy.sql.Sql
+                                
+                                // 如果是deploy-only模式，从数据库加载版本
+                                if (BUILD_MODE == "deploy-only") {
+                                    try {
+                                        // 数据库连接配置 - 需要根据您的环境调整
+                                        def dbUrl = "jdbc:postgresql://192.168.233.8:5432/jenkins_deployments"
+                                        def dbUser = "sonar"
+                                        def dbPassword = "sonar123"
+                                        def driver = "org.postgresql.Driver"
+                                        
+                                        // 加载驱动
+                                        Class.forName(driver)
+                                        def sql = Sql.newInstance(dbUrl, dbUser, dbPassword, driver)
+                                        
+                                        // 查询最近10个成功构建的版本
+                                        def versions = sql.rows("""
+                                            SELECT version 
+                                            FROM build_records 
+                                            WHERE project_name = ? AND build_status = 'SUCCESS'
+                                            ORDER BY build_timestamp DESC 
+                                            LIMIT 10
+                                        """, ['demo-helloworld'])
+                                        
+                                        sql.close()
+                                        
+                                        // 返回版本列表
+                                        def versionList = versions.collect { it.version }
+                                        return versionList ?: ["暂无可用版本"]
+                                        
+                                    } catch (Exception e) {
+                                        return ["数据库连接失败: " + e.message]
+                                    }
+                                } else {
+                                    return ["请选择deploy-only模式以显示版本列表"]
                                 }
-                            } else {
-                                return ["请选择deploy-only模式以显示版本列表"]
-                            }
-                        ''',
-                                fallbackScript: [
-                                        $class: 'GroovyScript',
-                                        script: 'return ["加载版本列表失败"]'
+                            ''',
+                                        fallbackScript: 'return ["加载版本列表失败"]'
                                 ]
                         ]
                 ],
-                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
                 // === 控制是否跳过依赖检查 ===
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
         ])
