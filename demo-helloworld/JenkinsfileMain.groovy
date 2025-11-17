@@ -11,9 +11,9 @@ properties([
                 string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
                 string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),
                 choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only', 'deploy-only'], description: '''构建模式选择：
-                • full-pipeline: 完整流水线（构建+部署）- 自动生成版本号
-                • build-only: 仅构建（会推送Docker镜像到仓库）- 自动生成版本号  
-                • deploy-only: 仅部署（需要从下方选择部署版本）'''),
+• full-pipeline: 完整流水线（构建+部署）- 自动生成版本号
+• build-only: 仅构建（会推送Docker镜像到仓库）- 自动生成版本号  
+• deploy-only: 仅部署（需要从下方选择部署版本）'''),
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
 
