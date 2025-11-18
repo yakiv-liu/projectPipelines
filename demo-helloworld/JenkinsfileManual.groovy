@@ -153,7 +153,7 @@ def extractVersionFromChoice(choiceValue) {
 }
 
 // 调用共享库，传递所有必要配置
-mainPipeline([
+manualPipeline([
         projectName: params.PROJECT_NAME,
         projectRepoUrl: params.PROJECT_REPO_URL,
         projectBranch: params.PROJECT_BRANCH,
