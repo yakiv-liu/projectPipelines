@@ -1,15 +1,13 @@
 @Library('jenkins-pipeline-library@master')_
 
-def isPR = env.CHANGE_ID != null
-print "change_id的值是：${env.CHANGE_ID}"
-print "ispr的值: ${isPR}"
-print "branch name is: ${env.BRANCH_NAME}"
 
 properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
                 string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
                 string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),
+                string(name: 'APP_PORT', defaultValue: '8085', description: '应用服务端口号'),
+                string(name: 'AGENT_LABEL', defaultValue: 'docker-jnlp-slave', description: 'Jenkins Agent节点标签'),
                 choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only', 'deploy-only'], description: '''构建模式选择：
 • full-pipeline: 完整流水线（构建+部署）- 自动生成版本号
 • build-only: 仅构建（会推送Docker镜像到仓库）- 自动生成版本号  
@@ -159,15 +157,15 @@ mainPipeline([
         projectName: params.PROJECT_NAME,
         projectRepoUrl: params.PROJECT_REPO_URL,
         projectBranch: params.PROJECT_BRANCH,
-        org: 'yakiv-liu',
-        repo: 'demo-helloworld',
-        agentLabel: 'docker-jnlp-slave',
+//        org: 'yakiv-liu',
+//        repo: 'demo-helloworld',
+        agentLabel: params.AGENT_LABEL,
         defaultEmail: params.EMAIL_RECIPIENTS,
         deployEnv: params.DEPLOY_ENV,
         buildMode: params.BUILD_MODE,
         deployVersion: extractVersionFromChoice(params.DEPLOY_VERSION),
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
-        appPort: 8085,
+        appPort: params.APP_PORT.toInteger(),
         environmentHosts: [
                 staging: [host: '192.168.233.8'],
                 'pre-prod': [host: '192.168.233.9'],
